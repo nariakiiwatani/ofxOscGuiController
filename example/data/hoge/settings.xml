@@ -1,0 +1,25 @@
+<osc>
+    <host>localhost</host>
+    <port>7400</port>
+</osc>
+<panel name="p1">
+    <x>100</x>
+    <y>400</y>
+    <control type="int">
+        <name>inttest</name>
+        <min>-127</min>
+        <max>128</max>
+    </control>
+</panel>
+<panel name="p2">
+    <x>614</x>
+    <y>492</y>
+    <control type="float">
+        <name>floatval</name>
+        <min>0</min>
+        <max>5</max>
+    </control>
+    <control type="bool">
+        <name>flag</name>
+    </control>
+</panel>
