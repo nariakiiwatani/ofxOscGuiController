@@ -1,13 +1,13 @@
 /*!
- *	@‘—‚é‚Æ‚«
- *		send‚·‚ê‚Î‘—‚ç‚ê‚Ü‚·B
- *		ƒtƒH[ƒ}ƒbƒg•¶š—ñ‚ÍˆÈ‰º‚ªg—p‰Â‚Å‚·B
+ *	@é€ã‚‹ã¨ã
+ *		sendã™ã‚Œã°é€ã‚‰ã‚Œã¾ã™ã€‚
+ *		ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆæ–‡å­—åˆ—ã¯ä»¥ä¸‹ãŒä½¿ç”¨å¯ã§ã™ã€‚
  *		i: int, f: float, l: long, s: string
  *
- *	@ó‚¯æ‚é‚Æ‚«
- *		addReceiver‚ÉƒAƒhƒŒƒX‚ğw’è‚µ‚Ä“o˜^‚µ‚Ä‚­‚¾‚³‚¢B
- *		w’è‚µ‚½ƒAƒhƒŒƒX‚ÉƒƒbƒZ[ƒW‚ğó‚¯æ‚é‚ÆA“o˜^‚µ‚½ŠÖ”‚ªŒÄ‚Î‚ê‚Ü‚·B
- *		i‘æ“ñˆø”ˆÈ~‚ÍofAddListener‚ğQl‚É‚µ‚Ä‚­‚¾‚³‚¢j
+ *	@å—ã‘å–ã‚‹ã¨ã
+ *		addReceiverã«ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’æŒ‡å®šã—ã¦ç™»éŒ²ã—ã¦ãã ã•ã„ã€‚
+ *		æŒ‡å®šã—ãŸã‚¢ãƒ‰ãƒ¬ã‚¹ã«ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å—ã‘å–ã‚‹ã¨ã€ç™»éŒ²ã—ãŸé–¢æ•°ãŒå‘¼ã°ã‚Œã¾ã™ã€‚
+ *		ï¼ˆç¬¬äºŒå¼•æ•°ä»¥é™ã¯ofAddListenerã‚’å‚è€ƒã«ã—ã¦ãã ã•ã„ï¼‰
  */
 
 #pragma once
@@ -18,7 +18,7 @@
 #include <map>
 
 namespace osc {
-	// Sender—p
+	// Senderç”¨
 	void setupSender(const string& hostname, int port);
 	void send(const string& address, const char* fmt, ...);
 	void send(const string& address, const vector<int>& arg);
@@ -27,13 +27,13 @@ namespace osc {
 	void send(const string& address, int num, const int* arg);
 	void send(const string& address, int num, const float* arg);
 
-	// Receiver—p
+	// Receiverç”¨
 	void setupReceiver(int port);
 	template<class T>
 	void addReceiveEvent(string address, T* obj, void (T::*method)(ofxOscMessage& msg));
 	template<class T>
 	void removeReceiveEvent(string address, T* obj, void (T::*method)(ofxOscMessage& msg));
-	// ˆÈ‰º‚³‚í‚ñ‚È‚¢‚Å‚¢‚¢‚Å‚·
+	// ä»¥ä¸‹ã•ã‚ã‚“ãªã„ã§ã„ã„ã§ã™
 	extern map<string, ofEvent<ofxOscMessage>> events_;
 	void receive();
 }

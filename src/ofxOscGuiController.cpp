@@ -1,17 +1,16 @@
 #include "ofxOscGuiController.h"
 
-ofxOscGuiController::ofxOscGuiController(string name)
-:name_(name)
-{
-	loadFromFile();
-}
-
 ofxOscGuiController::~ofxOscGuiController()
 {
 	while(!panel_.empty()) {
 		delete panel_.at(0);
 		panel_.erase(panel_.begin());
 	}
+}
+
+void ofxOscGuiController::setName(const string& name)
+{
+	name_ = name;
 }
 
 void ofxOscGuiController::loadFromFile()
@@ -82,23 +81,25 @@ void ofxOscGuiController::draw()
 }
 
 ofxOscGuiPanel::ofxOscGuiPanel(ofxOscSender* osc_sender, string address, string folder)
-:ofxParamEdit(folder+"/"+address)
+:ofxParamPanel()
 ,osc_sender_(osc_sender)
 ,send_always_(false)
 ,address_(address)
 {
+	setup(folder+"/"+address, folder+"/"+address+".xml");
 	addDefault();
 	load();
 }
 
 ofxOscGuiPanel::ofxOscGuiPanel(ofxOscSender* osc_sender, string address, string folder, ofxXmlSettings& xml)
-:ofxParamEdit(folder+"/"+address)
+:ofxParamPanel()
 ,osc_sender_(osc_sender)
 ,send_always_(false)
 ,address_(address)
 {
+	setup(folder+"/"+address, folder+"/"+address+".xml");
 	addDefault();
-	loadFromXml(xml);
+	loadSettingFromXml(xml);
 	load();
 }
 
@@ -112,7 +113,7 @@ void ofxOscGuiPanel::addDefault()
 	addToggle("send always", send_always_);
 }
 
-void ofxOscGuiPanel::loadFromXml(ofxXmlSettings& xml)
+void ofxOscGuiPanel::loadSettingFromXml(ofxXmlSettings& xml)
 {
 	setPosition(xml.getValue("x", 0), xml.getValue("y", 0));
 	int num = xml.getNumTags("control");
@@ -125,25 +126,25 @@ void ofxOscGuiPanel::loadFromXml(ofxXmlSettings& xml)
 			value_[i].name = xml.getValue("name", "");
 			value_[i].min.i = xml.getValue("min", 0);
 			value_[i].max.i = xml.getValue("max", 255);
-			addInt(value_[i].name, value_[i].val.i, value_[i].min.i, value_[i].max.i, this, &ofxOscGuiPanel::onChange);
+			addSlider(value_[i].name, value_[i].val.i, value_[i].min.i, value_[i].max.i, this, &ofxOscGuiPanel::onChange);
 		}
 		else if(type=="float") {
 			value_[i].type = F32;
 			value_[i].name = xml.getValue("name", "");
 			value_[i].min.f = xml.getValue("min", -1);
 			value_[i].max.f = xml.getValue("max", 1);
-			addFloat(value_[i].name, value_[i].val.f, value_[i].min.f, value_[i].max.f, this, &ofxOscGuiPanel::onChange);
+			addSlider(value_[i].name, value_[i].val.f, value_[i].min.f, value_[i].max.f, this, &ofxOscGuiPanel::onChange);
 		}
 		else if(type == "bool") {
 			value_[i].type = BOOL;
 			value_[i].name = xml.getValue("name", "");
-			addBool(value_[i].name, value_[i].val.b, this, &ofxOscGuiPanel::onChange);
+			addToggle(value_[i].name, value_[i].val.b, this, &ofxOscGuiPanel::onChange);
 		}
 		xml.popTag();
 	}
 }
 
-void ofxOscGuiPanel::saveToXml(ofxXmlSettings& xml)
+void ofxOscGuiPanel::saveSettingToXml(ofxXmlSettings& xml)
 {
 	const ofPoint& pos = getPosition();
 	xml.addValue("x", pos.x);

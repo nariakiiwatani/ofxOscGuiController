@@ -1,14 +1,16 @@
 #pragma once
 
 #include "ofxOscSender.h"
-#include "ofxParamEdit.h"
+#include "ofxParamPanel.h"
 
 class ofxOscGuiPanel;
 class ofxOscGuiController
 {
 public:
-	ofxOscGuiController(string name);
+	ofxOscGuiController(){}
 	~ofxOscGuiController();
+
+	void setName(const string& name);
 
 	void loadFromFile();
 	void saveToFile();
@@ -27,7 +29,7 @@ private:
 	int port_;
 };
 
-class ofxOscGuiPanel : public ofxParamEdit
+class ofxOscGuiPanel : public ofxParamPanel
 {
 public:
 	ofxOscGuiPanel(ofxOscSender* osc_sender, string address, string folder);
@@ -35,8 +37,8 @@ public:
 	~ofxOscGuiPanel();
 	void send();
 
-	void loadFromXml(ofxXmlSettings& xml);
-	void saveToXml(ofxXmlSettings& xml);
+	void loadSettingFromXml(ofxXmlSettings& xml);
+	void saveSettingToXml(ofxXmlSettings& xml);
 
 	const string& getAddress() { return address_; }
 
