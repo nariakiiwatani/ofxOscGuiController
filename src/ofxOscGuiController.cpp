@@ -1,33 +1,41 @@
 #include "ofxOscGuiController.h"
 
+ofxOscGuiController::ofxOscGuiController(string name)
+:name_(name)
+{
+	panel_.setup(name, name+"/"+name+".xml");
+}
+
 ofxOscGuiController::~ofxOscGuiController()
 {
-	while(!panel_.empty()) {
-		delete panel_.at(0);
-		panel_.erase(panel_.begin());
+	while(!osc_panel_.empty()) {
+		delete osc_panel_.at(0);
+		osc_panel_.erase(osc_panel_.begin());
 	}
 }
 
-void ofxOscGuiController::setName(const string& name)
-{
-	name_ = name;
-}
-
-void ofxOscGuiController::loadFromFile()
+void ofxOscGuiController::loadSettingFromFile()
 {
 	ofxXmlSettings xml;
 	xml.loadFile(name_+"/settings.xml");
-	loadFromXml(xml);
+	loadSettingFromXml(xml);
 }
 
-void ofxOscGuiController::saveToFile()
+void ofxOscGuiController::saveSettingToFile()
 {
 	ofxXmlSettings xml;
-	saveToXml(xml);
+	saveSettingToXml(xml);
 	xml.saveFile(name_+"/settings.xml");
+	/**
+	vector<ofxOscGuiPanel*>::iterator it = osc_panel_.begin();
+	vector<ofxOscGuiPanel*>::iterator end = osc_panel_.end();
+	while(it != end) {
+		(*it++)->save();
+	}
+	/**/
 }
 
-void ofxOscGuiController::loadFromXml(ofxXmlSettings& xml)
+void ofxOscGuiController::loadSettingFromXml(ofxXmlSettings& xml)
 {
 	if(xml.pushTag("osc")) {
 		host_ = xml.getValue("host", "localhost");
@@ -45,12 +53,13 @@ void ofxOscGuiController::loadFromXml(ofxXmlSettings& xml)
 		string name = xml.getAttribute("panel", "name", "", i);
 		xml.pushTag("panel", i);
 		ofxOscGuiPanel* panel = new ofxOscGuiPanel(&osc_sender_, name, name_, xml);
-		panel_.push_back(panel);
+		osc_panel_.push_back(panel);
+		panel_.addPanel(name, panel);
 		xml.popTag();
 	}
 }
 
-void ofxOscGuiController::saveToXml(ofxXmlSettings& xml)
+void ofxOscGuiController::saveSettingToXml(ofxXmlSettings& xml)
 {
 	xml.addTag("osc");
 	xml.pushTag("osc");
@@ -58,49 +67,58 @@ void ofxOscGuiController::saveToXml(ofxXmlSettings& xml)
 	xml.addValue("port", port_);
 	xml.popTag();
 
-	vector<ofxOscGuiPanel*>::iterator it = panel_.begin();
-	vector<ofxOscGuiPanel*>::iterator end = panel_.end();
+	vector<ofxOscGuiPanel*>::iterator it = osc_panel_.begin();
+	vector<ofxOscGuiPanel*>::iterator end = osc_panel_.end();
 	int index = 0;
 	while(it != end) {
 		xml.addTag("panel");
 		xml.addAttribute("panel", "name", (*it)->getAddress(), index);
 		xml.pushTag("panel", index);
-		(*it++)->saveToXml(xml);
+		(*it++)->saveSettingToXml(xml);
 		xml.popTag();
 		++index;
 	}
 }
+void ofxOscGuiController::loadParamFromFile()
+{
+	panel_.load();
+}
+
+void ofxOscGuiController::saveParamToFile()
+{
+	panel_.save();
+}
+
 
 void ofxOscGuiController::draw()
 {
-	vector<ofxOscGuiPanel*>::iterator it = panel_.begin();
-	vector<ofxOscGuiPanel*>::iterator end = panel_.end();
+	panel_.draw();
+	/**
+	vector<ofxOscGuiPanel*>::iterator it = osc_panel_.begin();
+	vector<ofxOscGuiPanel*>::iterator end = osc_panel_.end();
 	while(it != end) {
 		(*it++)->draw();
 	}
+	/**/
 }
 
 ofxOscGuiPanel::ofxOscGuiPanel(ofxOscSender* osc_sender, string address, string folder)
-:ofxParamPanel()
-,osc_sender_(osc_sender)
+:osc_sender_(osc_sender)
 ,send_always_(false)
 ,address_(address)
 {
 	setup(folder+"/"+address, folder+"/"+address+".xml");
 	addDefault();
-	load();
 }
 
 ofxOscGuiPanel::ofxOscGuiPanel(ofxOscSender* osc_sender, string address, string folder, ofxXmlSettings& xml)
-:ofxParamPanel()
-,osc_sender_(osc_sender)
+:osc_sender_(osc_sender)
 ,send_always_(false)
 ,address_(address)
 {
 	setup(folder+"/"+address, folder+"/"+address+".xml");
 	addDefault();
 	loadSettingFromXml(xml);
-	load();
 }
 
 ofxOscGuiPanel::~ofxOscGuiPanel()
@@ -131,14 +149,19 @@ void ofxOscGuiPanel::loadSettingFromXml(ofxXmlSettings& xml)
 		else if(type=="float") {
 			value_[i].type = F32;
 			value_[i].name = xml.getValue("name", "");
-			value_[i].min.f = xml.getValue("min", -1);
-			value_[i].max.f = xml.getValue("max", 1);
+			value_[i].min.f = xml.getValue("min", -1.f);
+			value_[i].max.f = xml.getValue("max", 1.f);
 			addSlider(value_[i].name, value_[i].val.f, value_[i].min.f, value_[i].max.f, this, &ofxOscGuiPanel::onChange);
 		}
 		else if(type == "bool") {
 			value_[i].type = BOOL;
 			value_[i].name = xml.getValue("name", "");
 			addToggle(value_[i].name, value_[i].val.b, this, &ofxOscGuiPanel::onChange);
+		}
+		else if(type == "string") {
+			value_[i].type = STRING;
+			value_[i].name = xml.getValue("name", "");
+			addString(value_[i].name);
 		}
 		xml.popTag();
 	}
@@ -156,9 +179,10 @@ void ofxOscGuiPanel::saveSettingToXml(ofxXmlSettings& xml)
 	while(it != end) {
 		xml.addTag("control");
 		switch((*it).type) {
-		case S32:	xml.addAttribute("control", "type", "int", index);		break;
-		case F32:	xml.addAttribute("control", "type", "float", index);	break;
-		case BOOL:	xml.addAttribute("control", "type", "bool", index);		break;
+		case S32:		xml.addAttribute("control", "type", "int", index);		break;
+		case F32:		xml.addAttribute("control", "type", "float", index);	break;
+		case BOOL:		xml.addAttribute("control", "type", "bool", index);		break;
+		case STRING:	xml.addAttribute("control", "type", "string", index);	break;
 		}
 		xml.pushTag("control", index);
 		xml.addValue("name", (*it).name);
@@ -172,6 +196,7 @@ void ofxOscGuiPanel::saveSettingToXml(ofxXmlSettings& xml)
 			xml.addValue("max", (*it).max.f);
 			break;
 		case BOOL:
+		case STRING:
 			break;
 		}
 		xml.popTag();
@@ -183,23 +208,30 @@ void ofxOscGuiPanel::saveSettingToXml(ofxXmlSettings& xml)
 void ofxOscGuiPanel::send()
 {
 	ofxOscMessage msg;
-	msg.setAddress("/"+address_);
+	vector<string> address = ofSplitString(name, " ", true, true);
+	msg.setAddress("/"+address[0]);
+	for(int i = 1; i < address.size(); ++i) {
+		msg.addIntArg(ofToInt(address[i]));
+	}
 	vector<Value>::iterator it = value_.begin();
 	vector<Value>::iterator end = value_.end();
 	while(it != end) {
 		switch((*it).type) {
-		case S32:	msg.addIntArg((*it).val.i);		break;
-		case F32:	msg.addFloatArg((*it).val.f);	break;
-		case BOOL:	msg.addIntArg((*it).val.b?1:0);	break;
+		case S32:		msg.addIntArg((*it).val.i);		break;
+		case F32:		msg.addFloatArg((*it).val.f);	break;
+		case BOOL:		msg.addIntArg((*it).val.b?1:0);	break;
+		case STRING:	msg.addStringArg((*it).s);		break;
 		}
 		++it;
 	}
 	osc_sender_->sendMessage(msg);
 }
 
-void ofxOscGuiPanel::onSendButton(bool&)
+void ofxOscGuiPanel::onSendButton(bool& b)
 {
-	send();
+	if(b) {
+		send();
+	}
 }
 void ofxOscGuiPanel::onChange(int&)
 {

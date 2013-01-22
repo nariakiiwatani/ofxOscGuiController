@@ -2,28 +2,31 @@
 
 #include "ofxOscSender.h"
 #include "ofxParamPanel.h"
+#include "ofxXmlSettings.h"
 
 class ofxOscGuiPanel;
 class ofxOscGuiController
 {
 public:
-	ofxOscGuiController(){}
+	ofxOscGuiController(string name);
 	~ofxOscGuiController();
 
-	void setName(const string& name);
+	void loadSettingFromFile();
+	void saveSettingToFile();
+	void loadSettingFromXml(ofxXmlSettings& xml);
+	void saveSettingToXml(ofxXmlSettings& xml);
 
-	void loadFromFile();
-	void saveToFile();
-
-	void loadFromXml(ofxXmlSettings& xml);
-	void saveToXml(ofxXmlSettings& xml);
+	void loadParamFromFile();
+	void saveParamToFile();
 
 	void draw();
 
 private:
 	string name_;
 	ofxOscSender osc_sender_;
-	vector<ofxOscGuiPanel*> panel_;
+
+	ofxParamPanel panel_;
+	vector<ofxOscGuiPanel*> osc_panel_;
 
 	string host_;
 	int port_;
@@ -55,6 +58,7 @@ private:
 		S32,
 		F32,
 		BOOL,
+		STRING,
 	};
 	struct Value {
 		Type type;
@@ -64,6 +68,7 @@ private:
 			float f;
 			bool b;
 		} val, min, max;
+		string s;
 	};
 	vector<Value> value_;
 
